@@ -4,6 +4,7 @@
 #include "ofxOpenCv.h"
 #include "ofxKinect.h"
 #include "ofxBox2d.h"
+#include "ofxTriangle.h"
 
 class testApp : public ofBaseApp {
 public:
@@ -38,7 +39,9 @@ public:
 	ofEasyCam easyCam;
     
     ofxBox2d box2d;
-    ofxBox2dCircle cursor;
     vector<ofxBox2dCircle> circles;
     vector<ofxBox2dJoint> joints;
+    vector<ofxBox2dPolygon> body;
+    
+    ofxTriangle triangle;
 };

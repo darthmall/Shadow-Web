@@ -4,11 +4,11 @@
 //--------------------------------------------------------------
 void testApp::setup() {
     ofSetVerticalSync(true);
-	ofBackgroundHex(0xffffff);
-	ofSetLogLevel(OF_LOG_NOTICE);
+	ofBackground(0, 0, 0);
+    ofSetLogLevel(OF_LOG_VERBOSE);
     
 	box2d.init();
-	box2d.setGravity(0, 10);
+	box2d.setGravity(0, 1);
 	box2d.setFPS(30.0);
 	box2d.registerGrabbing();
     
@@ -18,11 +18,7 @@ void testApp::setup() {
         new ofVec2f(((float) ofGetWidth()), ((float) ofGetHeight()) / 2.f),
         new ofVec2f(((float) ofGetWidth()) / 2.f, ((float) ofGetHeight()))
     };
-    
-    cursor.setup(box2d.getWorld(), ofGetMouseX(), ofGetMouseY(), 20);
-    
-    //    center.setup(box2d.getWorld(), ofGetWidth() / 2, ofGetHeight() / 2, 40);
-    
+
     for (int i = 0; i < 4; i++) {
         ofVec2f *a = anchors[i];
         ofVec2f *b = anchors[(i + 1 < 4) ? i + 1 : 0];
@@ -55,14 +51,12 @@ void testApp::setup() {
 		joint.setLength(c1.getPosition().distance(c2.getPosition()) * 0.8);
 		joints.push_back(joint);
 	}
-    
-	ofSetLogLevel(OF_LOG_VERBOSE);
-	
+
 	// enable depth->video image calibration
 	kinect.setRegistration(true);
     
 	kinect.init();
-	//kinect.init(true); // shows infrared instead of RGB video image
+//	kinect.init(true); // shows infrared instead of RGB video image
 	//kinect.init(false, false); // disable video image (faster fps)
 	kinect.open();
 	
@@ -70,8 +64,8 @@ void testApp::setup() {
 	grayThreshNear.allocate(kinect.width, kinect.height);
 	grayThreshFar.allocate(kinect.width, kinect.height);
 	
-	nearThreshold = 230;
-	farThreshold = 70;
+	nearThreshold = 255;
+	farThreshold = 120;
 	bThreshWithOpenCV = true;
 	
 	ofSetFrameRate(60);
@@ -82,9 +76,7 @@ void testApp::setup() {
 }
 
 //--------------------------------------------------------------
-void testApp::update() {
-	ofBackground(255, 255, 255);
-	
+void testApp::update() {	
 	kinect.update();
 	
 	// there is a new frame and we are connected
@@ -123,8 +115,47 @@ void testApp::update() {
 		// also, find holes is set to true so we will get interior contours as well....
 		contourFinder.findContours(grayImage, 10, (kinect.width*kinect.height)/2, 20, false);
 	}
-
-    cursor.setPosition(ofGetMouseX(), ofGetMouseY());
+    
+    // Stolen from IDEO
+    triangle.clear();
+    
+    for (int i = 0; i < contourFinder.nBlobs; i++) {
+		triangle.triangulate(contourFinder.blobs[i].pts, max( 3.0f, (float)contourFinder.blobs[i].pts.size()/12));
+	}
+    
+    for (int i = body.size() - 1; i >= 0; i--) {
+        box2d.world->DestroyBody(body[i].body);
+    }
+    
+    body.clear();
+    
+    // Stolen from IDEO
+	//Triangulate contour in order to add to box2d
+	ofxTriangleData* tData;
+	for (int i=triangle.triangles.size()-1; i>=0; i--) {
+		
+		tData = &triangle.triangles[i];
+		
+		ofxBox2dPolygon poly;
+		
+		ofPoint t1,t2,t3;
+		
+		t1.x=ofMap(tData->a.x, 0, grayImage.width, 0, ofGetWidth());
+		t1.y=ofMap(tData->a.y, 0, grayImage.height, 0, ofGetHeight());
+		t2.x = ofMap(tData->b.x, 0, grayImage.width, 0, ofGetWidth());
+		t2.y=ofMap(tData->b.y, 0, grayImage.height, 0, ofGetHeight());
+		
+		t3.x = ofMap(tData->c.x, 0, grayImage.width, 0, ofGetWidth());
+		t3.y = ofMap(tData->c.y, 0, grayImage.height, 0, ofGetHeight());
+		
+		poly.addVertex(t1.x,t1.y);
+		poly.addVertex(t2.x,t2.y);
+		poly.addVertex(t3.x,t3.y);
+		
+        poly.create(box2d.world);
+        body.push_back(poly);
+	}
+    
 	box2d.update();
 }
 
@@ -135,25 +166,23 @@ void testApp::draw() {
 		joints[i].draw();
 	}
 	
-    // draw from the live kinect
-    kinect.drawDepth(10, 10, 400, 300);
-    
-    grayImage.draw(10, 320, 400, 300);
-    contourFinder.draw(10, 320, 400, 300);
+
+    ofSetColor(255, 255, 255);
+    for (int i = 0; i < body.size(); i++) {
+        body[i].draw();
+    }
 }
 
 //--------------------------------------------------------------
 void testApp::exit() {
 	kinect.setCameraTiltAngle(0); // zero the tilt on exit
 	kinect.close();
-	
-#ifdef USE_TWO_KINECTS
-	kinect2.close();
-#endif
 }
 
 //--------------------------------------------------------------
 void testApp::keyPressed (int key) {
+    stringstream logstream;
+    
 	switch (key) {
 		case ' ':
 			bThreshWithOpenCV = !bThreshWithOpenCV;
@@ -163,23 +192,31 @@ void testApp::keyPressed (int key) {
 		case '.':
 			farThreshold ++;
 			if (farThreshold > 255) farThreshold = 255;
+            logstream << "far: " << farThreshold;
+            ofLog(OF_LOG_NOTICE, logstream.str());
 			break;
 			
 		case '<':
 		case ',':
 			farThreshold --;
 			if (farThreshold < 0) farThreshold = 0;
+            logstream << "far: " << farThreshold;
+            ofLog(OF_LOG_NOTICE, logstream.str());
 			break;
 			
 		case '+':
 		case '=':
 			nearThreshold ++;
 			if (nearThreshold > 255) nearThreshold = 255;
+            logstream << "near: " << nearThreshold;
+            ofLog(OF_LOG_NOTICE, logstream.str());
 			break;
 			
 		case '-':
 			nearThreshold --;
 			if (nearThreshold < 0) nearThreshold = 0;
+            logstream << "near: " << nearThreshold;
+            ofLog(OF_LOG_NOTICE, logstream.str());
 			break;
 			
 		case 'w':

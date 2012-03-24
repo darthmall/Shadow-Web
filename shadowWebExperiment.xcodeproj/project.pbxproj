@@ -64,6 +64,8 @@
 		7EE547B6151D4863003160C5 /* ofxBox2dJoint.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7EE54786151D4862003160C5 /* ofxBox2dJoint.cpp */; };
 		7EE547B7151D4863003160C5 /* ofxBox2dPolygon.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7EE54788151D4862003160C5 /* ofxBox2dPolygon.cpp */; };
 		7EE547B8151D4863003160C5 /* ofxBox2dRect.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7EE5478B151D4862003160C5 /* ofxBox2dRect.cpp */; };
+		7EE547D4151D6E8D003160C5 /* assert.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7EE547CC151D6E8D003160C5 /* assert.cpp */; };
+		7EE547D6151D6E8D003160C5 /* ofxTriangle.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 7EE547D0151D6E8D003160C5 /* ofxTriangle.cpp */; };
 		BBAB23CB13894F3D00AA2426 /* GLUT.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBAB23BE13894E4700AA2426 /* GLUT.framework */; };
 		E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E4328148138ABC890047C5CB /* openFrameworksDebug.a */; };
 		E45BE97B0E8CC7DD009D7055 /* AGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E45BE9710E8CC7DD009D7055 /* AGL.framework */; };
@@ -309,6 +311,10 @@
 		7EE5478C151D4862003160C5 /* ofxBox2dRect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxBox2dRect.h; sourceTree = "<group>"; };
 		7EE5478D151D4862003160C5 /* ofxBox2dRender.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxBox2dRender.h; sourceTree = "<group>"; };
 		7EE5478E151D4862003160C5 /* ofxBox2dUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxBox2dUtils.h; sourceTree = "<group>"; };
+		7EE547CC151D6E8D003160C5 /* assert.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = assert.cpp; sourceTree = "<group>"; };
+		7EE547CE151D6E8D003160C5 /* README */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = README; sourceTree = "<group>"; };
+		7EE547D0151D6E8D003160C5 /* ofxTriangle.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ofxTriangle.cpp; sourceTree = "<group>"; };
+		7EE547D1151D6E8D003160C5 /* ofxTriangle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofxTriangle.h; sourceTree = "<group>"; };
 		BBAB23BE13894E4700AA2426 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = ../../../libs/glut/lib/osx/GLUT.framework; sourceTree = "<group>"; };
 		E4328143138ABC890047C5CB /* openFrameworksLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openFrameworksLib.xcodeproj; path = ../../../libs/openFrameworksCompiled/project/osx/openFrameworksLib.xcodeproj; sourceTree = SOURCE_ROOT; };
 		E45BE9710E8CC7DD009D7055 /* AGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AGL.framework; path = /System/Library/Frameworks/AGL.framework; sourceTree = "<absolute>"; };
@@ -882,9 +888,46 @@
 			path = src;
 			sourceTree = "<group>";
 		};
+		7EE547BF151D6E8D003160C5 /* ofxTriangle */ = {
+			isa = PBXGroup;
+			children = (
+				7EE547CA151D6E8D003160C5 /* lib */,
+				7EE547CE151D6E8D003160C5 /* README */,
+				7EE547CF151D6E8D003160C5 /* src */,
+			);
+			name = ofxTriangle;
+			path = ../../../addons/ofxTriangle;
+			sourceTree = "<group>";
+		};
+		7EE547CA151D6E8D003160C5 /* lib */ = {
+			isa = PBXGroup;
+			children = (
+				7EE547CB151D6E8D003160C5 /* Triangle */,
+			);
+			path = lib;
+			sourceTree = "<group>";
+		};
+		7EE547CB151D6E8D003160C5 /* Triangle */ = {
+			isa = PBXGroup;
+			children = (
+				7EE547CC151D6E8D003160C5 /* assert.cpp */,
+			);
+			path = Triangle;
+			sourceTree = "<group>";
+		};
+		7EE547CF151D6E8D003160C5 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				7EE547D0151D6E8D003160C5 /* ofxTriangle.cpp */,
+				7EE547D1151D6E8D003160C5 /* ofxTriangle.h */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 		BB4B014C10F69532006C3DED /* addons */ = {
 			isa = PBXGroup;
 			children = (
+				7EE547BF151D6E8D003160C5 /* ofxTriangle */,
 				7EE54726151D4862003160C5 /* ofxBox2d */,
 				30F2B5011415565D00597A7B /* ofxKinect */,
 				30F2B5961415565D00597A7B /* ofxOpenCv */,
@@ -1112,6 +1155,8 @@
 				7EE547B6151D4863003160C5 /* ofxBox2dJoint.cpp in Sources */,
 				7EE547B7151D4863003160C5 /* ofxBox2dPolygon.cpp in Sources */,
 				7EE547B8151D4863003160C5 /* ofxBox2dRect.cpp in Sources */,
+				7EE547D4151D6E8D003160C5 /* assert.cpp in Sources */,
+				7EE547D6151D6E8D003160C5 /* ofxTriangle.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
