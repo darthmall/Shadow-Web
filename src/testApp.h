@@ -5,6 +5,7 @@
 #include "ofxKinect.h"
 #include "ofxBox2d.h"
 #include "ofxTriangle.h"
+#include "ofxCvContourSimplify.h"
 
 class testApp : public ofBaseApp {
 public:
@@ -19,13 +20,19 @@ public:
 	void mousePressed(int x, int y, int button);
 	void mouseReleased(int x, int y, int button);
 	void windowResized(int w, int h);
-	
+    void drawContours();
+    void connect(ofxBox2dCircle a, ofxBox2dCircle b);
+    void spin();
+    
+    vector<ofxBox2dCircle> anchors;
+    ofxBox2dCircle center;
+
 	ofxKinect kinect;
 	
 	ofxCvGrayscaleImage grayImage; // grayscale depth image
 	ofxCvGrayscaleImage grayThreshNear; // the near thresholded image
 	ofxCvGrayscaleImage grayThreshFar; // the far thresholded image
-	
+
 	ofxCvContourFinder contourFinder;
 	
 	bool bThreshWithOpenCV;
@@ -44,4 +51,9 @@ public:
     vector<ofxBox2dPolygon> body;
     
     ofxTriangle triangle;
+
+    ofxCvContourSimplify contourSimp;
+    vector<ofPoint> contourRough;
+    vector<ofPoint> contourSmooth;
+
 };

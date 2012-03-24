@@ -4,60 +4,21 @@
 //--------------------------------------------------------------
 void testApp::setup() {
     ofSetVerticalSync(true);
-	ofBackground(0, 0, 0);
+	ofBackground(255, 255, 255);
     ofSetLogLevel(OF_LOG_VERBOSE);
     
 	box2d.init();
 	box2d.setGravity(0, 1);
-	box2d.setFPS(30.0);
+	box2d.setFPS(60.0);
 	box2d.registerGrabbing();
     
-    ofVec2f *anchors[4] = {
-        new ofVec2f(0, ((float) ofGetHeight()) / 2.f),
-        new ofVec2f(((float) ofGetWidth()) / 2.f, 0),
-        new ofVec2f(((float) ofGetWidth()), ((float) ofGetHeight()) / 2.f),
-        new ofVec2f(((float) ofGetWidth()) / 2.f, ((float) ofGetHeight()))
-    };
-
-    for (int i = 0; i < 4; i++) {
-        ofVec2f *a = anchors[i];
-        ofVec2f *b = anchors[(i + 1 < 4) ? i + 1 : 0];
-        
-        for (int j = 0; j < 20; j++) {
-            ofxBox2dCircle circle;
-            ofVec2f pos;
-            pos.x = a->x + (j * ((b->x - a->x) / 20));
-            pos.y = a->y + (j * ((b->y - a->y) / 20));
-            
-            if (pos.x > 0 && pos.x < ofGetWidth() && pos.y > 0 && pos.y < ofGetHeight()) {
-                circle.setPhysics(0.1, 0.53, 0.1);
-            } 
-            
-            circle.setup(box2d.getWorld(), pos.x, pos.y, 4);
-            
-            circles.push_back(circle);
-        }
-    }
+    center.setup(box2d.getWorld(), ofGetWidth() / 2.f, ofGetHeight() / 2.f, 4);
+    spin();
     
-	// now connect each circle with a joint
-	for (int i=0; i<circles.size(); i++) {
-		
-		ofxBox2dJoint joint;
-        
-        ofxBox2dCircle c1 = circles[i];
-        ofxBox2dCircle c2 = circles[(i + 1) < circles.size() ? i + 1 : 0];
-        joint.setup(box2d.getWorld(), c1.body, c2.body, 4.f);
-        
-		joint.setLength(c1.getPosition().distance(c2.getPosition()) * 0.8);
-		joints.push_back(joint);
-	}
-
 	// enable depth->video image calibration
 	kinect.setRegistration(true);
     
 	kinect.init();
-//	kinect.init(true); // shows infrared instead of RGB video image
-	//kinect.init(false, false); // disable video image (faster fps)
 	kinect.open();
 	
 	grayImage.allocate(kinect.width, kinect.height);
@@ -76,7 +37,9 @@ void testApp::setup() {
 }
 
 //--------------------------------------------------------------
-void testApp::update() {	
+void testApp::update() {
+    ofBackground(255, 255, 255);
+    
 	kinect.update();
 	
 	// there is a new frame and we are connected
@@ -84,7 +47,8 @@ void testApp::update() {
 		
 		// load grayscale depth image from the kinect source
 		grayImage.setFromPixels(kinect.getDepthPixels(), kinect.width, kinect.height);
-		
+        grayImage.mirror(false, true);
+        
 		// we do two thresholds - one for the far plane and one for the near plane
 		// we then do a cvAnd to get the pixels which are a union of the two thresholds
 		if(bThreshWithOpenCV) {
@@ -165,12 +129,171 @@ void testApp::draw() {
 		ofSetHexColor(0x444342);
 		joints[i].draw();
 	}
-	
 
-    ofSetColor(255, 255, 255);
-    for (int i = 0; i < body.size(); i++) {
-        body[i].draw();
+    drawContours();
+}
+
+
+//--------------------------------------------------------------
+void testApp::drawContours(){
+	
+	//contourFinder.drawAlt(0,0,ofGetWidth(),ofGetHeight());	
+	
+	int numBlobs = contourFinder.findContours(grayImage, 10, (kinect.width*kinect.height)/2, 20, true);
+	
+	for(int i=0;i<6;i++){
+		
+		
+		if(numBlobs > 0){			
+			
+			
+			for(int j=0;j<numBlobs;j++){
+				
+				//lets get out the contour data
+				int length_of_contour = contourFinder.blobs[j].pts.size();
+				
+				//clear the old contours
+				contourRough.clear();
+				contourRough.assign(length_of_contour, ofPoint());
+				contourSmooth.clear();
+				contourSmooth.assign(length_of_contour, ofPoint());
+				
+				//lets make a copy for ourselves
+				for(int k = 0; k < length_of_contour; k++){
+					contourRough[k] = contourFinder.blobs[j].pts[k];
+				}
+				
+				contourSimp.simplify(contourRough, contourSmooth, 0.001*i);
+				
+				
+				glPushMatrix();
+				
+				ofSetLineWidth(0.25);
+				
+                ofEnableAlphaBlending();
+				ofSetColor(0,0,0,76);
+				ofBeginShape();
+				
+				for(int i = 0; i < contourSmooth.size(); i++){
+					float xC = ofMap(contourSmooth[i].x, 0, 640, 0, ofGetWidth());
+					float yC = ofMap(contourSmooth[i].y, 0, 480, 0, ofGetHeight());
+					ofVertex(xC,yC);
+				}
+				
+				ofEndShape(true);
+                ofDisableAlphaBlending();
+				glPopMatrix();
+				
+			}
+		}
+	}
+	
+	
+}
+
+void testApp::spin() {
+    
+    for (vector<ofxBox2dJoint>::reverse_iterator it = joints.rbegin(); it < joints.rend(); it++) {
+        box2d.getWorld()->DestroyJoint(it->joint);
     }
+    
+    joints.clear();
+    
+    for (vector<ofxBox2dCircle>::reverse_iterator it = circles.rbegin(); it < circles.rend(); it++) {
+        box2d.getWorld()->DestroyBody(it->body);
+    }
+    
+    circles.clear();
+    
+    for (vector<ofxBox2dCircle>::reverse_iterator it = anchors.rbegin(); it < anchors.rend(); it++) {
+        box2d.getWorld()->DestroyBody(it->body);
+    }
+    
+    anchors.clear();
+    
+    for (int i = 0; i < 4; i++) {
+        int num_anchors = (int) ofRandom(1, 5);
+        
+        for (int j = 0; j < num_anchors; j++) {
+            ofxBox2dCircle circle;
+        
+            float x = 0;
+            float y = 0;
+            
+            switch (i) {
+                case 0:
+                    y = ofRandom(ofGetHeight());
+                    break;
+                case 1:
+                    x = ofRandom(ofGetWidth());
+                    break;
+                case 2:
+                    x = ofGetWidth();
+                    y = ofRandom(ofGetHeight());
+                    break;
+                case 3:
+                    x = ofRandom(ofGetWidth());
+                    y = ofGetHeight();
+                    break;
+            }
+            
+            circle.setup(box2d.getWorld(), x, y, 4);
+            anchors.push_back(circle);
+        }
+    }
+    
+    for (int i = 0; i < anchors.size(); i++) {
+        connect(anchors[i], anchors[(i + 1 < anchors.size()) ? i + 1 : 0]);
+        connect(anchors[i], center);
+    }
+    
+    for (int i = 0; i < ofRandom(30, 50); i++) {
+        ofxBox2dCircle a = circles[ofRandom(circles.size())];
+        ofxBox2dCircle b;
+        
+        do {
+            b = circles[ofRandom(circles.size())];
+        } while (a.getPosition() == b.getPosition());
+        
+        connect(a, b);
+    }
+
+}
+
+void testApp::connect(ofxBox2dCircle a, ofxBox2dCircle b) {
+    vector<ofxBox2dCircle> thread;
+    
+    thread.push_back(a);
+    for (int i = 0; i < 20; i++) {
+        ofxBox2dCircle circle;
+        ofVec2f pos;
+        pos.x = a.getPosition().x + (i * ((b.getPosition().x - a.getPosition().x) / 20));
+        pos.y = a.getPosition().y + (i * ((b.getPosition().y - a.getPosition().y) / 20));
+        
+        if (pos.x > 0 && pos.x < ofGetWidth() && pos.y > 0 && pos.y < ofGetHeight()) {
+            circle.setPhysics(1, 0.53, 0);
+        } 
+        
+        circle.setup(box2d.getWorld(), pos.x, pos.y, 4);
+        
+        circles.push_back(circle);
+        thread.push_back(circle);
+    }
+    
+    thread.push_back(b);
+    
+    // now connect each circle with a joint
+	for (int i = 0; i < thread.size() - 1; i++) {
+		
+		ofxBox2dJoint joint;
+        
+        ofxBox2dCircle c1 = thread[i];
+        ofxBox2dCircle c2 = thread[i + 1];
+        joint.setup(box2d.getWorld(), c1.body, c2.body, 10.f);
+        
+		joint.setLength(c1.getPosition().distance(c2.getPosition()) * 0.8);
+		joints.push_back(joint);
+	}
 }
 
 //--------------------------------------------------------------
@@ -232,7 +355,11 @@ void testApp::keyPressed (int key) {
 			kinect.setCameraTiltAngle(0); // zero the tilt
 			kinect.close();
 			break;
-			
+        
+        case 'r':
+            spin();
+            break;
+
 		case OF_KEY_UP:
 			angle++;
 			if(angle>30) angle=30;
