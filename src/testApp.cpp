@@ -11,9 +11,7 @@ void testApp::setup() {
 	box2d.setGravity(0, 1);
 	box2d.setFPS(60.0);
 	box2d.registerGrabbing();
-    
-    ofAddListener(box2d.contactStartEvents, this, &testApp::startContact);
-    
+
     center.setup(box2d.getWorld(), ofGetWidth() / 2.f, ofGetHeight() / 2.f, 4);
     spin();
     
@@ -147,23 +145,6 @@ void testApp::draw() {
 	}
 
     drawContours();
-}
-
-void testApp::startContact(ofxBox2dContactArgs &e) {
-    if (e.a != NULL && e.b != NULL) {
-        if (e.a->GetType() == b2Shape::e_circle) {
-            if (e.b->GetType() == b2Shape::e_polygon) {
-                
-            }
-        } else if (e.b->GetType() == b2Shape::e_circle) {
-            if (e.a->GetType() == b2Shape::e_polygon) {
-                
-            }
-        } else if (e.a->GetType() == b2Shape::e_circle &&
-                   e.b->GetType() == b2Shape::e_circle) {
-            ofLog(OF_LOG_NOTICE, "Two circles, this shouldn't happen");
-        }
-    }
 }
 
 //--------------------------------------------------------------
