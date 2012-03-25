@@ -12,6 +12,8 @@ void testApp::setup() {
 	box2d.setFPS(60.0);
 	box2d.registerGrabbing();
     
+    ofAddListener(box2d.contactStartEvents, this, &testApp::startContact);
+    
     center.setup(box2d.getWorld(), ofGetWidth() / 2.f, ofGetHeight() / 2.f, 4);
     spin();
     
@@ -115,12 +117,26 @@ void testApp::update() {
 		poly.addVertex(t1.x,t1.y);
 		poly.addVertex(t2.x,t2.y);
 		poly.addVertex(t3.x,t3.y);
-		
+        
         poly.create(box2d.world);
+		
+        b2Filter filter;
+        filter.categoryBits = 0x0004;
+        filter.maskBits = 0x0002;
+        filter.groupIndex = 1;        
+        poly.setFilterData(filter);
+
         body.push_back(poly);
 	}
     
 	box2d.update();
+    
+    for (vector<ofxBox2dJoint>::iterator it = joints.begin(); it < joints.end(); it++) {
+        if (it->getReactionForce(1.f).squareLength() > 100) {
+            box2d.world->DestroyJoint(it->joint);
+            it = joints.erase(it);
+        }
+    }
 }
 
 //--------------------------------------------------------------
@@ -133,6 +149,22 @@ void testApp::draw() {
     drawContours();
 }
 
+void testApp::startContact(ofxBox2dContactArgs &e) {
+    if (e.a != NULL && e.b != NULL) {
+        if (e.a->GetType() == b2Shape::e_circle) {
+            if (e.b->GetType() == b2Shape::e_polygon) {
+                
+            }
+        } else if (e.b->GetType() == b2Shape::e_circle) {
+            if (e.a->GetType() == b2Shape::e_polygon) {
+                
+            }
+        } else if (e.a->GetType() == b2Shape::e_circle &&
+                   e.b->GetType() == b2Shape::e_circle) {
+            ofLog(OF_LOG_NOTICE, "Two circles, this shouldn't happen");
+        }
+    }
+}
 
 //--------------------------------------------------------------
 void testApp::drawContours(){
@@ -187,8 +219,6 @@ void testApp::drawContours(){
 			}
 		}
 	}
-	
-	
 }
 
 void testApp::spin() {
@@ -236,8 +266,15 @@ void testApp::spin() {
                     y = ofGetHeight();
                     break;
             }
-            
+
             circle.setup(box2d.getWorld(), x, y, 4);
+
+            b2Filter filter;
+            filter.categoryBits = 0x0002;
+            filter.maskBits = 0x0004;
+            filter.groupIndex = -2;
+            circle.setFilterData(filter);
+
             anchors.push_back(circle);
         }
     }
@@ -267,15 +304,23 @@ void testApp::connect(ofxBox2dCircle a, ofxBox2dCircle b) {
     for (int i = 0; i < 20; i++) {
         ofxBox2dCircle circle;
         ofVec2f pos;
+
         pos.x = a.getPosition().x + (i * ((b.getPosition().x - a.getPosition().x) / 20));
         pos.y = a.getPosition().y + (i * ((b.getPosition().y - a.getPosition().y) / 20));
         
         if (pos.x > 0 && pos.x < ofGetWidth() && pos.y > 0 && pos.y < ofGetHeight()) {
             circle.setPhysics(1, 0.53, 0);
         } 
+
+        circle.setup(box2d.world, pos.x, pos.y, 10.f);
         
-        circle.setup(box2d.getWorld(), pos.x, pos.y, 4);
+        b2Filter filter;
+        filter.categoryBits = 0x0002;
+        filter.maskBits = 0x0004;
+        filter.groupIndex = -2;
         
+        circle.setFilterData(filter);
+
         circles.push_back(circle);
         thread.push_back(circle);
     }
@@ -284,7 +329,6 @@ void testApp::connect(ofxBox2dCircle a, ofxBox2dCircle b) {
     
     // now connect each circle with a joint
 	for (int i = 0; i < thread.size() - 1; i++) {
-		
 		ofxBox2dJoint joint;
         
         ofxBox2dCircle c1 = thread[i];
@@ -295,7 +339,7 @@ void testApp::connect(ofxBox2dCircle a, ofxBox2dCircle b) {
 		joints.push_back(joint);
 	}
 }
-
+         
 //--------------------------------------------------------------
 void testApp::exit() {
 	kinect.setCameraTiltAngle(0); // zero the tilt on exit
@@ -305,6 +349,7 @@ void testApp::exit() {
 //--------------------------------------------------------------
 void testApp::keyPressed (int key) {
     stringstream logstream;
+    int joint_index;
     
 	switch (key) {
 		case ' ':
@@ -360,6 +405,12 @@ void testApp::keyPressed (int key) {
             spin();
             break;
 
+        case 'q':
+            joint_index = (int) ofRandom(joints.size());
+            box2d.getWorld()->DestroyJoint(joints[joint_index].joint);
+            joints.erase(joints.begin() + joint_index);
+            break;
+            
 		case OF_KEY_UP:
 			angle++;
 			if(angle>30) angle=30;

@@ -23,6 +23,7 @@ public:
     void drawContours();
     void connect(ofxBox2dCircle a, ofxBox2dCircle b);
     void spin();
+    void startContact(ofxBox2dContactArgs &e);
     
     vector<ofxBox2dCircle> anchors;
     ofxBox2dCircle center;
