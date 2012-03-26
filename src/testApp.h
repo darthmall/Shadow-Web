@@ -24,9 +24,6 @@ public:
     void connect(ofxBox2dCircle a, ofxBox2dCircle b);
     void spin();
     
-    vector<ofxBox2dCircle> anchors;
-    ofxBox2dCircle center;
-
 	ofxKinect kinect;
 	
 	ofxCvGrayscaleImage grayImage; // grayscale depth image
@@ -45,13 +42,16 @@ public:
 	// used for viewing the point cloud
 	ofEasyCam easyCam;
     
+    // Box2d world objects
     ofxBox2d box2d;
+    ofxBox2dCircle center;
     vector<ofxBox2dCircle> circles;
     vector<ofxBox2dJoint> joints;
     vector<ofxBox2dPolygon> body;
     
     ofxTriangle triangle;
 
+    // Contour simplification for the body
     ofxCvContourSimplify contourSimp;
     vector<ofPoint> contourRough;
     vector<ofPoint> contourSmooth;

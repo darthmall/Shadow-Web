@@ -8,7 +8,7 @@ void testApp::setup() {
     ofSetLogLevel(OF_LOG_VERBOSE);
     
 	box2d.init();
-	box2d.setGravity(0, 1);
+	box2d.setGravity(0, 30);
 	box2d.setFPS(60.0);
 	box2d.registerGrabbing();
 
@@ -130,7 +130,11 @@ void testApp::update() {
 	box2d.update();
     
     for (vector<ofxBox2dJoint>::iterator it = joints.begin(); it < joints.end(); it++) {
-        if (it->getReactionForce(1.f).squareLength() > 100) {
+        stringstream ss;
+        ss << "force: " << it->getReactionForce(1.f).squareLength();
+        ofLog(OF_LOG_NOTICE, ss.str());
+        
+        if (it->getReactionForce(1.f).squareLength() > 0.1) {
             box2d.world->DestroyJoint(it->joint);
             it = joints.erase(it);
         }
@@ -178,7 +182,6 @@ void testApp::drawContours(){
 				
 				contourSimp.simplify(contourRough, contourSmooth, 0.001*i);
 				
-				
 				glPushMatrix();
 				
 				ofSetLineWidth(0.25);
@@ -202,8 +205,7 @@ void testApp::drawContours(){
 	}
 }
 
-void testApp::spin() {
-    
+void testApp::spin() {    
     for (vector<ofxBox2dJoint>::reverse_iterator it = joints.rbegin(); it < joints.rend(); it++) {
         box2d.getWorld()->DestroyJoint(it->joint);
     }
@@ -215,110 +217,95 @@ void testApp::spin() {
     }
     
     circles.clear();
+
     
-    for (vector<ofxBox2dCircle>::reverse_iterator it = anchors.rbegin(); it < anchors.rend(); it++) {
-        box2d.getWorld()->DestroyBody(it->body);
-    }
-    
-    anchors.clear();
-    
-    for (int i = 0; i < 4; i++) {
-        int num_anchors = (int) ofRandom(1, 5);
+    for (int i = 0; i < 8; i++) {
+        ofxBox2dCircle anchor;
         
-        for (int j = 0; j < num_anchors; j++) {
-            ofxBox2dCircle circle;
-        
-            float x = 0;
-            float y = 0;
-            
-            switch (i) {
-                case 0:
-                    y = ofRandom(ofGetHeight());
-                    break;
-                case 1:
-                    x = ofRandom(ofGetWidth());
-                    break;
-                case 2:
-                    x = ofGetWidth();
-                    y = ofRandom(ofGetHeight());
-                    break;
-                case 3:
-                    x = ofRandom(ofGetWidth());
-                    y = ofGetHeight();
-                    break;
-            }
-
-            circle.setup(box2d.getWorld(), x, y, 4);
-
-            b2Filter filter;
-            filter.categoryBits = 0x0002;
-            filter.maskBits = 0x0004;
-            filter.groupIndex = -2;
-            circle.setFilterData(filter);
-
-            anchors.push_back(circle);
+        switch (i) {
+            case 0:
+                anchor.setup(box2d.world, ofGetWidth() * 0.33, 0, 4);
+                break;
+                
+            case 1:
+                anchor.setup(box2d.world, ofGetWidth() * 0.66, 0, 4);
+                break;
+                
+            case 2:
+                anchor.setup(box2d.world, ofGetWidth(), ofGetHeight() * 0.33, 4);
+                break;
+                
+            case 3:
+                anchor.setup(box2d.world, ofGetWidth(), ofGetHeight() * 0.66, 4);
+                break;
+                
+            case 4:
+                anchor.setup(box2d.world, ofGetWidth() * 0.66, ofGetHeight(), 4);
+                break;
+                
+            case 5:
+                anchor.setup(box2d.world, ofGetWidth() * 0.33, ofGetHeight(), 4);
+                break;
+                
+            case 6:
+                anchor.setup(box2d.world, 0, ofGetHeight() * 0.66, 4);
+                break;
+                
+            case 7:
+                anchor.setup(box2d.world, 0, ofGetHeight() * 0.33, 4);
+                break;
+                
+            default:
+                break;
         }
-    }
-    
-    for (int i = 0; i < anchors.size(); i++) {
-        connect(anchors[i], anchors[(i + 1 < anchors.size()) ? i + 1 : 0]);
-        connect(anchors[i], center);
-    }
-    
-    for (int i = 0; i < ofRandom(30, 50); i++) {
-        ofxBox2dCircle a = circles[ofRandom(circles.size())];
-        ofxBox2dCircle b;
-        
-        do {
-            b = circles[ofRandom(circles.size())];
-        } while (a.getPosition() == b.getPosition());
-        
-        connect(a, b);
-    }
-
-}
-
-void testApp::connect(ofxBox2dCircle a, ofxBox2dCircle b) {
-    vector<ofxBox2dCircle> thread;
-    
-    thread.push_back(a);
-    for (int i = 0; i < 20; i++) {
-        ofxBox2dCircle circle;
-        ofVec2f pos;
-
-        pos.x = a.getPosition().x + (i * ((b.getPosition().x - a.getPosition().x) / 20));
-        pos.y = a.getPosition().y + (i * ((b.getPosition().y - a.getPosition().y) / 20));
-        
-        if (pos.x > 0 && pos.x < ofGetWidth() && pos.y > 0 && pos.y < ofGetHeight()) {
-            circle.setPhysics(1, 0.53, 0);
-        } 
-
-        circle.setup(box2d.world, pos.x, pos.y, 10.f);
         
         b2Filter filter;
         filter.categoryBits = 0x0002;
         filter.maskBits = 0x0004;
         filter.groupIndex = -2;
+        anchor.setFilterData(filter);
+        circles.push_back(anchor);
         
-        circle.setFilterData(filter);
-
-        circles.push_back(circle);
-        thread.push_back(circle);
+        ofVec2f anchorPoint = anchor.getPosition();
+        float dx = (center.getPosition().x - anchorPoint.x) / 6;
+        float dy = (center.getPosition().y - anchorPoint.y) / 6;
+        
+        for (int j = 1; j < 6; j++) {
+            ofxBox2dCircle circle;
+            
+            circle.setPhysics(0.1, 0.5, 0);
+            circle.setup(box2d.world, anchorPoint.x + j * dx, anchorPoint.y + j * dy, 4);
+            
+            b2Filter filter;
+            filter.categoryBits = 0x0002;
+            filter.maskBits = 0x0004;
+            filter.groupIndex = -2;
+            circle.setFilterData(filter);
+            
+            circles.push_back(circle);
+        }
     }
     
-    thread.push_back(b);
+    for (int i = 0; i < circles.size(); i++) {
+        if ((i + 1) % 6 > i % 6) {
+            connect(circles[i], circles[i + 1]);
+        } else {
+            connect(circles[i], center);
+        }
+        
+        if (i + 6 >= circles.size()) {
+            connect(circles[i], circles[i - 42]);
+        } else {
+            connect(circles[i], circles[i + 6]);
+        }
+    }
+}
+
+void testApp::connect(ofxBox2dCircle a, ofxBox2dCircle b) {
+    ofxBox2dJoint joint;
+    joint.setup(box2d.getWorld(), a.body, b.body, 20.f, false);
     
-    // now connect each circle with a joint
-	for (int i = 0; i < thread.size() - 1; i++) {
-		ofxBox2dJoint joint;
-        
-        ofxBox2dCircle c1 = thread[i];
-        ofxBox2dCircle c2 = thread[i + 1];
-        joint.setup(box2d.getWorld(), c1.body, c2.body, 10.f);
-        
-		joint.setLength(c1.getPosition().distance(c2.getPosition()) * 0.8);
-		joints.push_back(joint);
-	}
+    joints.push_back(joint);
 }
          
 //--------------------------------------------------------------
