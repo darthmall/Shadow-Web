@@ -392,6 +392,10 @@ void testApp::keyPressed (int key) {
             joints.erase(joints.begin() + joint_index);
             break;
             
+        case 't':
+            ofToggleFullscreen();
+            break;
+
 		case OF_KEY_UP:
 			angle++;
 			if(angle>30) angle=30;
