@@ -1,11 +1,24 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxOpenCv.h"
-#include "ofxKinect.h"
-#include "ofxBox2d.h"
-#include "ofxTriangle.h"
-#include "ofxCvContourSimplify.h"
+#include "ofxOsc.h"
+
+#define PORT 12345
+#define HOST "localhost"
+#define TX 12346
+
+const string joints[] = {
+    "righthand",
+    "lefthand",
+    "rightelbow",
+    "leftelbow",
+    "rightfoot",
+    "leftfoot",
+    "rightknee",
+    "leftknee",
+    "head",
+    "torso"
+};
 
 class testApp : public ofBaseApp {
 public:
@@ -20,40 +33,8 @@ public:
 	void mousePressed(int x, int y, int button);
 	void mouseReleased(int x, int y, int button);
 	void windowResized(int w, int h);
-    void drawContours();
-    void connect(ofxBox2dCircle a, ofxBox2dCircle b);
-    void spin();
     
-    vector<ofxBox2dCircle> anchors;
-    ofxBox2dCircle center;
-
-	ofxKinect kinect;
-	
-	ofxCvGrayscaleImage grayImage; // grayscale depth image
-	ofxCvGrayscaleImage grayThreshNear; // the near thresholded image
-	ofxCvGrayscaleImage grayThreshFar; // the far thresholded image
-
-	ofxCvContourFinder contourFinder;
-	
-	bool bThreshWithOpenCV;
-	
-	int nearThreshold;
-	int farThreshold;
-	
-	int angle;
-	
-	// used for viewing the point cloud
-	ofEasyCam easyCam;
-    
-    ofxBox2d box2d;
-    vector<ofxBox2dCircle> circles;
-    vector<ofxBox2dJoint> joints;
-    vector<ofxBox2dPolygon> body;
-    
-    ofxTriangle triangle;
-
-    ofxCvContourSimplify contourSimp;
-    vector<ofPoint> contourRough;
-    vector<ofPoint> contourSmooth;
-
+    ofxOscReceiver receiver;
+    ofxOscSender sender;
+    vector<ofVec3f> limbs;
 };
